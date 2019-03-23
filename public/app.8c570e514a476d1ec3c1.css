@@ -1,0 +1,15 @@
+html {
+  font-family: sans-serif; }
+
+* {
+  box-sizing: border-box; }
+
+body {
+  background-color: #faff06;
+  font-family: sans-serif;
+  overflow: hidden; }
+
+canvas {
+  width: 100%;
+  height: 100%; }
+
