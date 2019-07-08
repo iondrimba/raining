@@ -1,6 +1,6 @@
 # ☔ Raining
 
-[![Build Status](https://travis-ci.org/iondrimba/raining.svg?branch=master)](https://travis-ci.org/iondrimba/raining)
+[![Build Status](https://travis-ci.org/iondrimba/raining.svg?branch=master)](https://travis-ci.org/iondrimba/raining) [![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=iondrimba/raining)](https://dependabot.com)
 
 ![Image Title](https://raw.githubusercontent.com/iondrimba/images/master/raining.gif)
 
