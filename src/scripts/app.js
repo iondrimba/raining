@@ -2,7 +2,7 @@ import 'styles/index.scss';
 import { map, distance, hexToRgbTreeJs } from './helpers';
 
 export default class App {
-  setup() {
+  setup () {
     this.gui = new dat.GUI();
     this.backgroundColor = '#faff06';
     this.gutter = { size: 0 };
@@ -34,7 +34,7 @@ export default class App {
   }
 
 
-  createScene() {
+  createScene () {
     this.scene = new THREE.Scene();
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -46,7 +46,7 @@ export default class App {
     document.body.appendChild(this.renderer.domElement);
   }
 
-  createCamera() {
+  createCamera () {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
@@ -56,14 +56,14 @@ export default class App {
     this.scene.add(this.camera);
   }
 
-  addAmbientLight() {
+  addAmbientLight () {
     const obj = { color: '#fff' };
     const light = new THREE.AmbientLight(obj.color, 1);
 
     this.scene.add(light);
   }
 
-  addSpotLight() {
+  addSpotLight () {
     const obj = { color: '#fff' };
     const light = new THREE.SpotLight(obj.color, 1);
 
@@ -73,14 +73,14 @@ export default class App {
     this.scene.add(light);
   }
 
-  addPointLight(color, position) {
+  addPointLight (color, position) {
     const pointLight = new THREE.PointLight(color, 1, 1000, 1);
     pointLight.position.set(position.x, position.y, position.z);
 
     this.scene.add(pointLight);
   }
 
-  createGrid() {
+  createGrid () {
     this.groupMesh = new THREE.Object3D();
 
     const meshParams = {
@@ -140,7 +140,7 @@ export default class App {
     }
   }
 
-  getMesh(geometry, material) {
+  getMesh (geometry, material) {
     const mesh = new THREE.Mesh(geometry, material);
 
     mesh.castShadow = true;
@@ -149,11 +149,11 @@ export default class App {
     return mesh;
   }
 
-  addCameraControls() {
+  addCameraControls () {
     this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
   }
 
-  addFloor() {
+  addFloor () {
     const geometry = new THREE.PlaneGeometry(100, 100);
     const material = new THREE.ShadowMaterial({ opacity: .3 });
 
@@ -166,7 +166,7 @@ export default class App {
     this.scene.add(this.floor);
   }
 
-  onResize() {
+  onResize () {
     this.width = window.innerWidth;
     this.height = window.innerHeight;
 
@@ -175,17 +175,17 @@ export default class App {
     this.renderer.setSize(this.width, this.height);
   }
 
-  addWaterDrop(geometry, material) {
+  addWaterDrop (geometry, material) {
     const waterDrop = new THREE.Mesh(geometry, material);
 
     return waterDrop;
   }
 
-  getRandomWaterDropPosition() {
+  getRandomWaterDropPosition () {
     return this.waterDropPositions[Math.floor(Math.random() * Math.floor(this.waterDropPositions.length))];
   }
 
-  animateWaterDrops() {
+  animateWaterDrops () {
     const meshParams = {
       color: '#6ad2ff',
       metalness: 0,
@@ -218,7 +218,7 @@ export default class App {
           ease: Sine.easeIn,
           y: -2,
           onUpdate: () => {
-            if (waterDrop.position.y < 1 ) {
+            if (waterDrop.position.y < 1) {
               this.ripples.push({ x, z, velocity: -1, angle: 0, amplitude: .1, radius: 1, motion: -.7 });
             }
           },
@@ -231,7 +231,7 @@ export default class App {
     }, 100);
   }
 
-  draw() {
+  draw () {
     for (let row = 0; row < this.grid.rows; row++) {
       for (let col = 0; col < this.grid.cols; col++) {
         for (let ripple = 0; ripple < this.ripples.length; ripple++) {
@@ -262,7 +262,7 @@ export default class App {
     }
   }
 
-  animate() {
+  animate () {
     this.controls.update();
 
     this.draw();
@@ -272,7 +272,7 @@ export default class App {
     requestAnimationFrame(this.animate.bind(this));
   }
 
-  init() {
+  init () {
     this.setup();
 
     this.createScene();
