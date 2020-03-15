@@ -1,8 +1,13 @@
+import Stats from 'stats.js';
 import 'styles/index.scss';
 import { map, distance, hexToRgbTreeJs } from './helpers';
 
 export default class App {
   setup() {
+    this.stats = new Stats();
+    this.stats.showPanel(0);
+    document.body.appendChild(this.stats.dom);
+    
     this.gui = new dat.GUI();
     this.backgroundColor = '#faff06';
     this.gutter = { size: 0 };
@@ -63,21 +68,27 @@ export default class App {
     this.scene.add(light);
   }
 
-  addSpotLight() {
-    const obj = { color: '#fff' };
-    const light = new THREE.SpotLight(obj.color, 1);
+  addDirectionalLight() {
+    this.directionalLight = new THREE.DirectionalLight(0xffffff, 1, 1000);
+    this.directionalLight.castShadow = true;
+    this.directionalLight.position.set(0, 1, 0);
 
-    light.position.set(0, 50, 0);
-    light.castShadow = true;
+    this.directionalLight.shadow.camera.far = 1000;
+    this.directionalLight.shadow.camera.near = -200;
 
-    this.scene.add(light);
-  }
+    this.directionalLight.shadow.camera.left = -40;
+    this.directionalLight.shadow.camera.right = 40;
+    this.directionalLight.shadow.camera.top = 20;
+    this.directionalLight.shadow.camera.bottom = -20;
+    this.directionalLight.shadow.camera.zoom = 1;
+    this.directionalLight.shadow.camera.needsUpdate = true;
 
-  addPointLight(color, position) {
-    const pointLight = new THREE.PointLight(color, 1, 1000, 1);
-    pointLight.position.set(position.x, position.y, position.z);
+    const targetObject = new THREE.Object3D();
+    targetObject.position.set(-50, -82, 40);
+    this.directionalLight.target = targetObject;
 
-    this.scene.add(pointLight);
+    this.scene.add(this.directionalLight);
+    this.scene.add(this.directionalLight.target);
   }
 
   createGrid() {
@@ -90,7 +101,6 @@ export default class App {
       roughness: 1,
     };
 
-
     const material = new THREE.MeshPhysicalMaterial(meshParams);
 
     const gui = this.gui.addFolder('Water');
@@ -99,50 +109,46 @@ export default class App {
       material.color = hexToRgbTreeJs(color);
     });
 
+    const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+    this.mesh = this.getMesh(geometry, material, this.grid.rows * this.grid.cols);
+    this.scene.add(this.mesh);
 
+    this.centerX = ((this.grid.cols) + ((this.grid.cols) * this.gutter.size)) * .4;
+    this.centerZ = ((this.grid.rows) + ((this.grid.rows) * this.gutter.size)) * .6;
+
+    let ii = 0;
     for (let row = 0; row < this.grid.rows; row++) {
       this.meshes[row] = [];
 
       for (let col = 0; col < this.grid.cols; col++) {
-        const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
-        const mesh = this.getMesh(geometry, material);
-        mesh.position.y = 0;
-        mesh.name = `cube-${row}-${col}`;
-
         const pivot = new THREE.Object3D();
         const x = col + (col * this.gutter.size);
         const z = row + (row * this.gutter.size);
 
-        pivot.add(mesh);
         pivot.scale.set(1, 1, 1);
-        pivot.position.set(x, 0, z);
+        pivot.position.set(x-this.centerX, 0, z-this.centerZ);
 
         this.meshes[row][col] = pivot;
-
-        this.groupMesh.add(pivot);
+        pivot.updateMatrix();
+        this.mesh.setMatrixAt(ii++, pivot.matrix);
       }
     }
 
-    const centerX = ((this.grid.cols) + ((this.grid.cols) * this.gutter.size)) * .4;
-    const centerZ = ((this.grid.rows) + ((this.grid.rows) * this.gutter.size)) * .6;
-
-    this.groupMesh.position.set(-centerX, 1, -centerZ);
-
-    this.scene.add(this.groupMesh);
+    this.mesh.instanceMatrix.needsUpdate = true;
 
     for (let row = 0; row < this.grid.rows; row++) {
       for (let col = 0; col < this.grid.cols; col++) {
         const x = col + (col * this.gutter.size);
         const z = row + (row * this.gutter.size);
 
-        this.waterDropPositions.push({ x: x + this.groupMesh.position.x, z: z + this.groupMesh.position.z });
+        this.waterDropPositions.push({ x: x-this.centerX, z: z-this.centerZ });
       }
     }
   }
 
-  getMesh(geometry, material) {
-    const mesh = new THREE.Mesh(geometry, material);
-
+  getMesh(geometry, material, count) {
+    const mesh = new THREE.InstancedMesh(geometry, material, count);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
 
@@ -232,20 +238,26 @@ export default class App {
   }
 
   draw() {
+    let ii = 0;
     for (let row = 0; row < this.grid.rows; row++) {
       for (let col = 0; col < this.grid.cols; col++) {
+        const pivot = this.meshes[row][col];
+
         for (let ripple = 0; ripple < this.ripples.length; ripple++) {
           const r = this.ripples[ripple];
-          const dist = distance(col, row, r.x - this.groupMesh.position.x, r.z - this.groupMesh.position.z);
+          const dist = distance(col, row, r.x+this.centerX, r.z+this.centerZ);
 
           if (dist < r.radius) {
             const offset = map(dist, 0, -this.waveLength, -100, 100);
             const angle = r.angle + offset;
             const y = map(Math.sin(angle), -1, 0, r.motion > 0 ? 0 : r.motion, 0);
 
-            this.meshes[row][col].position.y = y;
+            pivot.position.y = y;
           }
         }
+
+        pivot.updateMatrix();
+        this.mesh.setMatrixAt(ii++, pivot.matrix);
       }
     }
 
@@ -260,14 +272,20 @@ export default class App {
         this.ripples.shift();
       }
     }
+
+    this.mesh.instanceMatrix.needsUpdate = true;
   }
 
   animate() {
+    this.stats.begin();
+
     this.controls.update();
 
     this.draw();
 
     this.renderer.render(this.scene, this.camera);
+
+    this.stats.end();
 
     requestAnimationFrame(this.animate.bind(this));
   }
@@ -281,7 +299,7 @@ export default class App {
 
     this.addAmbientLight();
 
-    this.addSpotLight();
+    this.addDirectionalLight();
 
     this.createGrid();
 
